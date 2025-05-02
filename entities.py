@@ -4,9 +4,12 @@ from utils import *
 
 
 class Renderable:
+    renderables = set()
+
     def __init__(self):
         self.radius = 1
         self.color = pygame.Color(255, 255, 255)
+        Renderable.renderables.add(self)
 
     def render_circle(self, surface: pygame.Surface, pos: np.ndarray, thickness: int):
         pygame.draw.circle(surface, self.color, pos, self.radius, thickness)
@@ -14,7 +17,47 @@ class Renderable:
     # https://stackoverflow.com/questions/70051590/draw-lines-with-round-edges-in-pygame
 
 
+class Charge(Renderable):
+    charges = set()
+    FACTOR = 1
+    COLORS = [pygame.Color(150, 77, 240), pygame.Color(234, 245, 193), pygame.Color(242, 36, 84)]
+
+    def __init__(self, charge, initial_pos = np.zeros(2)):
+        super().__init__()
+        self.radius = 10
+
+        self.pos = initial_pos
+        self.vel = np.zeros(2)
+        self.friction = 800
+        self.charge = charge
+        self.color = self.COLORS[np.sign(charge) + 1]
+        self.mass = 1
+        Charge.charges.add(self)
+    
+    def render(self, surface):
+        self.render_circle(surface, self.pos, 3)
+    
+    def tick(self, delta_time):
+        for charge in Charge.charges:
+            if charge != self:
+                self.apply_force(
+                    np.zeros(2)
+                    if get_magnitude(self.pos - charge.pos) == 0
+                    else get_normalized(self.pos - charge.pos) * self.charge * charge.charge / (get_magnitude(self.pos - charge.pos))**2,
+                    delta_time
+                )
+        
+        print(self.vel)
+        print(self.pos)
+
+        self.pos += self.vel * delta_time
+    
+    def apply_force(self, force_vector, delta_time):
+        self.vel += force_vector / self.mass * delta_time
+
 class Player(Renderable):
+    players = set()
+
     def __init__(self):
         super().__init__()
         self.radius = 5
@@ -28,10 +71,7 @@ class Player(Renderable):
         self.deadband = 10
         self.friction = 800
         self.mass = 1
-
-        self.POSITIVE_COLOR = pygame.Color(242, 36, 84)
-        self.NEGATIVE_COLOR = pygame.Color(150, 77, 240)
-        self.NEUTRAL_COLOR = pygame.Color(234, 245, 193)
+        Player.players.add(self)
 
     def render(self, surface):
         self.render_circle(surface, self.pos, 0)

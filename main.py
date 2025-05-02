@@ -29,6 +29,8 @@ class Game:
             "interact": False
         }
         self.player = Player()
+        Charge(-100, np.array([200, 200], dtype=float))
+        Charge(100, np.array([300, 300], dtype=float))
 
     def run(self):
         while self.running:
@@ -46,6 +48,10 @@ class Game:
             self.canvas.fill((0, 0, 0))
             self.player.tick(self.controls["up"], self.controls["right"], self.controls["down"], self.controls["left"], self.delta_time)
             self.player.render(self.canvas)
+            for renderable in Renderable.renderables:
+                if renderable != self.player:
+                    renderable.tick(self.delta_time)
+                    renderable.render(self.canvas)
             pygame.display.flip()
 
 if __name__ == '__main__':
