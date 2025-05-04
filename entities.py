@@ -41,7 +41,6 @@ class Charge(Renderable):
     def calculate_collision_dv(target, other):
         return ((2 * other.mass) / (target.mass  + other.mass)) * (np.dot(target.vel - other.vel, target.pos - other.pos) / get_magnitude(target.pos - other.pos)**2) * (other.pos - target.pos)
 
-
     def calculate_interactions(delta_time):
         for pair in combinations(Charge.charges, 2):
             dist = get_magnitude(pair[0].pos - pair[1].pos)
@@ -54,8 +53,11 @@ class Charge(Renderable):
             pair[1].apply_force(-force, delta_time)
 
             if dist <= pair[0].radius + pair[1].radius:
-                pair[0].vel += Charge.calculate_collision_dv(pair[0], pair[1])
-                pair[1].vel +=  Charge.calculate_collision_dv(pair[1], pair[0])
+                dv0 = Charge.calculate_collision_dv(pair[0], pair[1])
+                dv1 = Charge.calculate_collision_dv(pair[1], pair[0])
+                
+                pair[0].vel += dv0
+                pair[1].vel += dv1
     
     def tick(self, delta_time):
         self.pos += self.vel * delta_time
