@@ -1,7 +1,7 @@
 import numpy as np
 
 def get_magnitude(vector: np.ndarray):
-    return np.linalg.norm(vector)
+    return float(np.linalg.norm(vector))
 
 def get_normalized(vector: np.ndarray, magnitude: float=1):
     prev_magnitude = get_magnitude(vector)

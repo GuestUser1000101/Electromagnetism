@@ -1,6 +1,7 @@
 import pygame
 import numpy as np
 from utils import *
+from itertools import combinations
 
 
 class Renderable:
@@ -36,20 +37,27 @@ class Charge(Renderable):
     
     def render(self, surface):
         self.render_circle(surface, self.pos, 3)
+
+    def calculate_collision_dv(target, other):
+        return ((2 * other.mass) / (target.mass  + other.mass)) * (np.dot(target.vel - other.vel, target.pos - other.pos) / get_magnitude(target.pos - other.pos)**2) * (other.pos - target.pos)
+
+
+    def calculate_interactions(delta_time):
+        for pair in combinations(Charge.charges, 2):
+            dist = get_magnitude(pair[0].pos - pair[1].pos)
+
+            if dist == 0:
+                continue
+            
+            force = get_normalized(pair[0].pos - pair[1].pos) * pair[0].charge * pair[1].charge / dist**2
+            pair[0].apply_force(force, delta_time)
+            pair[1].apply_force(-force, delta_time)
+
+            if dist <= pair[0].radius + pair[1].radius:
+                pair[0].vel += Charge.calculate_collision_dv(pair[0], pair[1])
+                pair[1].vel +=  Charge.calculate_collision_dv(pair[1], pair[0])
     
     def tick(self, delta_time):
-        for charge in Charge.charges:
-            if charge != self:
-                self.apply_force(
-                    np.zeros(2)
-                    if get_magnitude(self.pos - charge.pos) == 0
-                    else get_normalized(self.pos - charge.pos) * self.charge * charge.charge / (get_magnitude(self.pos - charge.pos))**2,
-                    delta_time
-                )
-        
-        print(self.vel)
-        print(self.pos)
-
         self.pos += self.vel * delta_time
     
     def apply_force(self, force_vector, delta_time):
