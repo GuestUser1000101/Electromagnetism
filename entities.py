@@ -48,10 +48,6 @@ class Charge(Renderable):
             if dist == 0:
                 continue
             
-            force = get_normalized(pair[0].pos - pair[1].pos) * pair[0].charge * pair[1].charge / dist**2
-            pair[0].apply_force(force, delta_time)
-            pair[1].apply_force(-force, delta_time)
-
             if dist <= pair[0].radius + pair[1].radius:
                 dv0 = Charge.calculate_collision_dv(pair[0], pair[1])
                 dv1 = Charge.calculate_collision_dv(pair[1], pair[0])
@@ -59,6 +55,11 @@ class Charge(Renderable):
                 pair[0].vel += dv0
                 pair[1].vel += dv1
     
+            force = get_normalized(pair[0].pos - pair[1].pos) * pair[0].charge * pair[1].charge / dist**2
+
+            pair[0].apply_force(force, delta_time)
+            pair[1].apply_force(-force, delta_time)
+
     def tick(self, delta_time):
         self.pos += self.vel * delta_time
     
