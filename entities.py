@@ -1,3 +1,4 @@
+import math
 import pygame
 import numpy as np
 from utils import *
@@ -12,16 +13,17 @@ class Renderable:
         self.color = pygame.Color(255, 255, 255)
         Renderable.renderables.add(self)
 
-    def render_circle(self, surface: pygame.Surface, pos: np.ndarray, thickness: int):
-        pygame.draw.circle(surface, self.color, pos, self.radius, thickness)
+    def render_circle(self, surface: pygame.Surface, pos: np.ndarray, thickness: int, radius: 1):
+        pygame.draw.circle(surface, self.color, pos, radius, thickness)
 
     # https://stackoverflow.com/questions/70051590/draw-lines-with-round-edges-in-pygame
 
 
 class Charge(Renderable):
+    MAX_CHARGE = 200
     charges = set()
     FACTOR = 1
-    COLORS = [pygame.Color(150, 77, 240), pygame.Color(234, 245, 193), pygame.Color(242, 36, 84)]
+    COLORS = [pygame.Color(150, 77, 240), pygame.Color(226, 250, 192), pygame.Color(242, 36, 84)]
 
     def __init__(self, charge, initial_pos = np.zeros(2)):
         super().__init__()
@@ -30,13 +32,18 @@ class Charge(Renderable):
         self.pos = initial_pos
         self.vel = np.zeros(2)
         self.friction = 800
-        self.charge = charge
-        self.color = self.COLORS[np.sign(charge) + 1]
+        self.set_charge(charge)
         self.mass = 1
         Charge.charges.add(self)
     
     def render(self, surface):
-        self.render_circle(surface, self.pos, 3)
+        self.render_circle(surface, self.pos, 3, self.radius)
+    
+    def calculate_wall_collision(self, wall_x, wall_y):
+        if self.pos[0] <= self.radius or self.pos[0] >= wall_x - self.radius:
+            self.vel[0] = -self.vel[0]
+        if self.pos[1] <= self.radius or self.pos[1] >= wall_y - self.radius:
+            self.vel[1] = -self.vel[1]
 
     def calculate_collision_dv(target, other):
         return ((2 * other.mass) / (target.mass  + other.mass)) * (np.dot(target.vel - other.vel, target.pos - other.pos) / get_magnitude(target.pos - other.pos)**2) * (other.pos - target.pos)
@@ -48,17 +55,24 @@ class Charge(Renderable):
             if dist == 0:
                 continue
             
-            if dist <= pair[0].radius + pair[1].radius:
+            if dist <= pair[0].radius + pair[1].radius and (np.dot(pair[1].pos - pair[0].pos, pair[0].vel) > 0 or np.dot(pair[0].pos - pair[1].pos, pair[1].vel) > 0):
                 dv0 = Charge.calculate_collision_dv(pair[0], pair[1])
                 dv1 = Charge.calculate_collision_dv(pair[1], pair[0])
                 
                 pair[0].vel += dv0
                 pair[1].vel += dv1
-    
-            force = get_normalized(pair[0].pos - pair[1].pos) * pair[0].charge * pair[1].charge / dist**2
+            else:
+                force = get_normalized(pair[0].pos - pair[1].pos) * pair[0].charge * pair[1].charge / dist**2
 
-            pair[0].apply_force(force, delta_time)
-            pair[1].apply_force(-force, delta_time)
+                pair[0].apply_force(force, delta_time)
+                pair[1].apply_force(-force, delta_time)
+
+    def set_charge(self, charge):
+        self.charge = charge
+        if self.charge > 0:
+            self.color = get_gradient_color(Charge.COLORS[1], Charge.COLORS[2], self.charge / Charge.MAX_CHARGE, lambda x: math.sqrt(x * (2 - x)))
+        else:
+            self.color = get_gradient_color(Charge.COLORS[1], Charge.COLORS[0], -self.charge / Charge.MAX_CHARGE, lambda x: math.sqrt(x * (2 - x)))
 
     def tick(self, delta_time):
         self.pos += self.vel * delta_time
@@ -72,6 +86,7 @@ class Player(Renderable):
     def __init__(self):
         super().__init__()
         self.radius = 5
+        self.affect_radius = 100
 
         # Movement control
         self.pos = np.zeros(2)
@@ -85,11 +100,17 @@ class Player(Renderable):
         Player.players.add(self)
 
     def render(self, surface):
-        self.render_circle(surface, self.pos, 0)
+        self.render_circle(surface, self.pos, 0, self.radius)
+        self.render_circle(surface, self.pos, 1, self.affect_radius)
 
-    def tick(self, up: bool, right: bool, down: bool, left: bool, delta_time: float):
-        vertical = int(down) - int(up)
-        horizontal = int(right) - int(left)
+    def tick(self, up, right, down, left, interact, delta_time):
+        if interact.is_pressed:
+            for charge in Charge.charges:
+                if get_magnitude(charge.pos - self.pos) <= self.affect_radius:
+                    charge.set_charge(-charge.charge)
+
+        vertical = int(down.is_held) - int(up.is_held)
+        horizontal = int(right.is_held) - int(left.is_held)
 
         movement_acc = get_normalized(np.array([horizontal, vertical])) * self.acceleration
         self.movement_vel += movement_acc * delta_time
