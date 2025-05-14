@@ -20,7 +20,7 @@ class Renderable:
 
 
 class Charge(Renderable):
-    MAX_CHARGE = 200
+    MAX_CHARGE = 400
     charges = set()
     FACTOR = 1
     COLORS = [pygame.Color(150, 77, 240), pygame.Color(226, 250, 192), pygame.Color(242, 36, 84)]

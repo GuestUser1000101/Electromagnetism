@@ -36,13 +36,13 @@ class Game:
         }
         self.player = Player()
         Charge(0, np.array([250, 250], dtype=float))
-        Charge(30, np.array([200, 200], dtype=float))
-        Charge(60, np.array([220, 400], dtype=float))
-        Charge(90, np.array([260, 400], dtype=float))
-        Charge(120, np.array([280, 10], dtype=float))
-        Charge(150, np.array([300, 200], dtype=float))
-        Charge(180, np.array([60, 110], dtype=float))
-        Charge(200, np.array([100, 160], dtype=float))
+        Charge(60, np.array([200, 200], dtype=float))
+        Charge(120, np.array([220, 400], dtype=float))
+        Charge(180, np.array([260, 400], dtype=float))
+        Charge(240, np.array([280, 10], dtype=float))
+        Charge(300, np.array([300, 200], dtype=float))
+        Charge(360, np.array([60, 110], dtype=float))
+        Charge(400, np.array([100, 160], dtype=float))
 
     def run(self):
         while self.running:
